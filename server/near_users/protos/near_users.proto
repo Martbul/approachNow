@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package near_users;
+
+option go_package = "./protos/near_users;near_users";
+
+
+service NearUsers {
+   rpc GetNearbyUsers(UserLocation) returns (NearbyUsersResponse);
+}
+
+message UserLocation {
+   double latitude = 1;
+   double longitude = 2;
+}
+
+message NearbyUsersResponse {
+   repeated User nearby_users = 1;
+}
+
+message User {
+  string id = 1;
+  double latitude = 2;
+  double longitude = 3;
+  string name = 4;
+}
