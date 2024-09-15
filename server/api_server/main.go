@@ -24,7 +24,7 @@ func main() {
 
 	logger := hclog.Default()
 
-	conn, err := grpc.Dial("localhost:9092", grpc.WithInsecure())
+	conn, err := grpc.Dial("localhost:8000", grpc.WithInsecure())
 	if err != nil {
 		panic(err)
 	}
@@ -34,19 +34,12 @@ func main() {
 	//create gRPC client for near_users
 	grpcClient = protosNearUsers.NewNearUsersClient(conn)
 
-	// usersAddres, err := grpcClient.GetNearbyUsers(currentUserLocaton)
+	// Set up WebSocket connection handler
+	webSocketHandler := handlers.NewWebsocketConnectionUserLocation(logger, grpcClient)
 
-	webSocketConnectionUserLocationHandler := handlers.NewWebsocketConnectionUserLocation(logger)
-
+	// Create and configure HTTP router
 	serverRouter := mux.NewRouter()
-
-	// Define WebSocket route
-	serverRouter.HandleFunc("/ws", webSocketConnectionUserLocationHandler.HandleWebsocketConnection)
-
-	//! work to be done
-	// handlers for API
-	// getRouter := serverRouter.Methods(http.MethodGet).Subrouter()
-	// 	getRouter.HandleFunc("/connections", productsHandler.ListAll)
+	serverRouter.HandleFunc("/ws", webSocketHandler.HandleWebsocketConnection)
 
 	//CORS
 	corsConfig := gohandlers.CORS(gohandlers.AllowedOrigins([]string{"http://localhost:5000"}))

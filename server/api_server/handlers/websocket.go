@@ -1,6 +1,10 @@
 package handlers
 
 import (
+	// "context"
+	"context"
+	"encoding/json"
+	// "fmt"
 	"net/http"
 
 	protosNearUsers "github.com/martbul/near_users/protos/near_users"
@@ -23,14 +27,17 @@ type UserLocation struct {
 
 type WebSocketConnectioUserLocation struct {
 	logger hclog.Logger
+		grpcClient protosNearUsers.NearUsersClient
+
 }
 
-func NewWebsocketConnectionUserLocation(logger hclog.Logger) *WebSocketConnectioUserLocation {
-	return &WebSocketConnectioUserLocation{logger}
+func NewWebsocketConnectionUserLocation(logger hclog.Logger, grpcClient protosNearUsers.NearUsersClient) *WebSocketConnectioUserLocation {
+	return &WebSocketConnectioUserLocation{logger: logger, grpcClient: grpcClient}
 }
 
 func (wscul *WebSocketConnectioUserLocation) HandleWebsocketConnection(w http.ResponseWriter, r *http.Request) {
-	conn, err := upgrader.Upgrade(w, r, nil)
+	conn, err := upgrader.Upgrade(w, r, nil) // Upgrade HTTP to WebSocket
+
 	wscul.logger.Info("GOT REQUEST")
 
 	if err != nil {
@@ -39,40 +46,20 @@ func (wscul *WebSocketConnectioUserLocation) HandleWebsocketConnection(w http.Re
 		//TODO: handle error
 	}
 
+	// Create a gRPC stream to the server
+	stream, err := wscul.grpcClient.StreamNearbyUsers(context.Background())
+	if err != nil {
+		wscul.logger.Error("Failed to create gRPC stream", "error", err)
+		return
+	}
+	defer stream.CloseSend()
 
-	// defer conn.Close()
 
-	// for {
-	// 	var loc UserLocation
 
-	// 	err := conn.ReadJSON(&loc)
-	// 	if err != nil {
-	// 		wscul.logger.Error("Unable to read json from client", "error", err)
-	// 		break
-	// 	}
-
-	// 	// Send location data to near_users via gRPC
-	// 	grpcLoc := &protosNearUsers.UserLocation{
-	// 		Latitude:  loc.Latitude,
-	// 		Longitude: loc.Longitude,
-	// 	}
-
-	// 	wscul.logger.Info("LOCATION", grpcLoc)
-	// 	//! maybe NEED TO BE FIXED
-	// 	// _, err = grpcClient.ReceiveLocation(context.Background(), grpcLoc)
-	// 	_, err = grpcClient.GetNearbyUsers(context.Background(), grpcLoc)
-	// 	if err != nil {
-	// 		wscul.logger.Error("Unsucesful sending of the gRPC request", "error", err)
-	// 	}
-
-	// 	// Optionally, send a response back to the WebSocket client
-	// 	conn.WriteJSON(map[string]string{"status": "location received"})
-
-	// }
-
-	
-	for {
-		messageType, p, err := conn.ReadMessage()
+	// Listen for incoming WebSocket messages (locations)
+	go func() {
+		for {
+			messageType, p, err := conn.ReadMessage()
 		if err != nil {
 			wscul.logger.Error("Unable to read message", "err", err)
 			return
@@ -82,14 +69,49 @@ func (wscul *WebSocketConnectioUserLocation) HandleWebsocketConnection(w http.Re
 			return
 		}
 
-		wscul.logger.Info("MESSAGE", string(p[:]))
+		var result map[string]float64
+		err = json.Unmarshal(p, &result)
+		if err != nil {
+			wscul.logger.Error("Unable to unmarshaling JSON:", "error", err)
+			return
+		}
 
-		// Echo the message back
-		if err := conn.WriteMessage(messageType, p); err != nil {
-			wscul.logger.Error("Unable to write message", "err", err)
+		grpcLoc := &protosNearUsers.UserLocation{
+			Latitude:  result["latitude"],
+			Longitude: result["longitude"],
+		}
+			wscul.logger.Info("Received location", "latitude", grpcLoc.Latitude, "longitude", grpcLoc.Longitude)
+
+			// Send location to gRPC stream
+			err = stream.Send(grpcLoc)
+			if err != nil {
+				wscul.logger.Error("Error sending to gRPC stream", "error", err)
+				return
+			}
+		}
+	}()
+
+	// Receive nearby users streamed by the server
+	for {
+		resp, err := stream.Recv()
+		if err != nil {
+			wscul.logger.Error("Error receiving from gRPC stream", "error", err)
+			return
+		}
+
+		// Send received gRPC response back to WebSocket client
+		nearbyUsersJSON, err := json.Marshal(resp)
+		if err != nil {
+			wscul.logger.Error("Error marshaling gRPC response", "error", err)
+			return
+		}
+
+		if err := conn.WriteMessage(websocket.TextMessage, nearbyUsersJSON); err != nil {
+			wscul.logger.Error("Unable to send WebSocket message", "error", err)
 			return
 		}
 	}
+
 	
 
 }

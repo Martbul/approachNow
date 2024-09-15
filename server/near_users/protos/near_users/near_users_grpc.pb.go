@@ -19,7 +19,8 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	NearUsers_GetNearbyUsers_FullMethodName = "/near_users.NearUsers/GetNearbyUsers"
+	NearUsers_GetNearbyUsers_FullMethodName    = "/near_users.NearUsers/GetNearbyUsers"
+	NearUsers_StreamNearbyUsers_FullMethodName = "/near_users.NearUsers/StreamNearbyUsers"
 )
 
 // NearUsersClient is the client API for NearUsers service.
@@ -27,6 +28,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type NearUsersClient interface {
 	GetNearbyUsers(ctx context.Context, in *UserLocation, opts ...grpc.CallOption) (*NearbyUsersResponse, error)
+	StreamNearbyUsers(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[UserLocation, NearbyUsersResponse], error)
 }
 
 type nearUsersClient struct {
@@ -47,11 +49,25 @@ func (c *nearUsersClient) GetNearbyUsers(ctx context.Context, in *UserLocation, 
 	return out, nil
 }
 
+func (c *nearUsersClient) StreamNearbyUsers(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[UserLocation, NearbyUsersResponse], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &NearUsers_ServiceDesc.Streams[0], NearUsers_StreamNearbyUsers_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[UserLocation, NearbyUsersResponse]{ClientStream: stream}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type NearUsers_StreamNearbyUsersClient = grpc.BidiStreamingClient[UserLocation, NearbyUsersResponse]
+
 // NearUsersServer is the server API for NearUsers service.
 // All implementations must embed UnimplementedNearUsersServer
 // for forward compatibility.
 type NearUsersServer interface {
 	GetNearbyUsers(context.Context, *UserLocation) (*NearbyUsersResponse, error)
+	StreamNearbyUsers(grpc.BidiStreamingServer[UserLocation, NearbyUsersResponse]) error
 	mustEmbedUnimplementedNearUsersServer()
 }
 
@@ -64,6 +80,9 @@ type UnimplementedNearUsersServer struct{}
 
 func (UnimplementedNearUsersServer) GetNearbyUsers(context.Context, *UserLocation) (*NearbyUsersResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetNearbyUsers not implemented")
+}
+func (UnimplementedNearUsersServer) StreamNearbyUsers(grpc.BidiStreamingServer[UserLocation, NearbyUsersResponse]) error {
+	return status.Errorf(codes.Unimplemented, "method StreamNearbyUsers not implemented")
 }
 func (UnimplementedNearUsersServer) mustEmbedUnimplementedNearUsersServer() {}
 func (UnimplementedNearUsersServer) testEmbeddedByValue()                   {}
@@ -104,6 +123,13 @@ func _NearUsers_GetNearbyUsers_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
+func _NearUsers_StreamNearbyUsers_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(NearUsersServer).StreamNearbyUsers(&grpc.GenericServerStream[UserLocation, NearbyUsersResponse]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type NearUsers_StreamNearbyUsersServer = grpc.BidiStreamingServer[UserLocation, NearbyUsersResponse]
+
 // NearUsers_ServiceDesc is the grpc.ServiceDesc for NearUsers service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -116,6 +142,13 @@ var NearUsers_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _NearUsers_GetNearbyUsers_Handler,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "StreamNearbyUsers",
+			Handler:       _NearUsers_StreamNearbyUsers_Handler,
+			ServerStreams: true,
+			ClientStreams: true,
+		},
+	},
 	Metadata: "near_users.proto",
 }

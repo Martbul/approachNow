@@ -7,6 +7,7 @@ option go_package = "./protos/near_users;near_users";
 
 service NearUsers {
    rpc GetNearbyUsers(UserLocation) returns (NearbyUsersResponse);
+   rpc StreamNearbyUsers(stream UserLocation) returns (stream NearbyUsersResponse);
 }
 
 message UserLocation {
