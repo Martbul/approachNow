@@ -1,4 +1,4 @@
-//Responsible for handling HTTP requests, serving as a REST API
+//Responsible for handling HTTP requests, serving as a REST API. Basically API Gateway
 
 package main
 
@@ -12,27 +12,41 @@ import (
 
 	gohandlers "github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
+	"github.com/joho/godotenv"
 	protosNearUsers "github.com/martbul/near_users/protos/near_users"
 
 	"github.com/hashicorp/go-hclog"
 	"google.golang.org/grpc"
 )
 
-var grpcClient protosNearUsers.NearUsersClient
 
 func main() {
 
 	logger := hclog.Default()
 
-	conn, err := grpc.Dial("localhost:8000", grpc.WithInsecure())
+	// Find .env file
+	err := godotenv.Load(".env")
 	if err != nil {
+		logger.Error("Unable to load .env file", "error", err)
+	}
+
+	// Getting and using a value from .env
+	dialNearUsersPort := os.Getenv("DIAL_NEAR_USERS_PORT")
+
+	//TODO: Remove WithInsecure in prod
+	conn, err := grpc.Dial(dialNearUsersPort, grpc.WithInsecure())
+	if err != nil {
+		logger.Error("Unable to connect to gRPC server", "error", err)
 		panic(err)
 	}
 
 	defer conn.Close()
 
 	//create gRPC client for near_users
-	grpcClient = protosNearUsers.NewNearUsersClient(conn)
+	grpcClient := protosNearUsers.NewNearUsersClient(conn)
+
+	//! usage of grpcClient
+	// response, err := grpcClient.GetNearbyUsers()
 
 	// Set up WebSocket connection handler
 	webSocketHandler := handlers.NewWebsocketConnectionUserLocation(logger, grpcClient)

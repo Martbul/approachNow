@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/hashicorp/go-hclog"
+	"github.com/martbul/near_users/data" // Import the database package
 	protosNearUsers "github.com/martbul/near_users/protos/near_users"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -59,6 +60,7 @@ func (nus *NearUsersServer) GetNearbyUsers(ctx context.Context, loc *protosNearU
 	nus.logger.Info("Returning nearby users", "count", len(nearbyUsers))
 	return resp, nil
 }
+
 // StreamNearbyUsers handles streaming of UserLocation messages and sends back NearbyUsersResponse messages.
 func (nus *NearUsersServer) StreamNearbyUsers(stream protosNearUsers.NearUsers_StreamNearbyUsersServer) error {
 	nus.logger.Info("StreamNearbyUsers started")
@@ -81,22 +83,48 @@ func (nus *NearUsersServer) StreamNearbyUsers(stream protosNearUsers.NearUsers_S
 			return status.Errorf(codes.InvalidArgument, "invalid location: %v", err)
 		}
 
-		// Simulate fetching nearby users
-		time.Sleep(500 * time.Millisecond) // Simulate processing delay
+		// След като тук имам локацията на 1 потребител, трябва да я запазя в базата данни, след това да взема всички хора които са в х радиус от локацията
 
-		nearbyUsers := []*protosNearUsers.User{
-			{
-				Id:        "1",
-				Latitude:  loc.Latitude + 0.01,
-				Longitude: loc.Longitude + 0.01,
-				Name:      "John Doe",
-			},
-			{
-				Id:        "2",
-				Latitude:  loc.Latitude + 0.02,
-				Longitude: loc.Longitude + 0.02,
-				Name:      "Jane Smith",
-			},
+		//insert/update the current user location in the user_locations table
+		_, err = data.Query(stream.Context(), `
+			INSERT INTO user_locations (latitude, longitude)
+			VALUES ($1, $2)
+		`, loc.Latitude, loc.Longitude)
+		if err != nil {
+			nus.logger.Error("Error inserting location into database", "error", err)
+			return status.Errorf(codes.Internal, "error inserting location: %v", err)
+		}
+
+		// Perform a query to the database to get nearby users
+		rows, err := data.Query(stream.Context(), `
+    SELECT user_id, latitude, longitude
+    FROM user_locations
+    WHERE ST_DWithin(
+        ST_SetSRID(ST_MakePoint($1, $2), 4326),
+        location,
+        $3
+    )
+`, loc.Longitude, loc.Latitude, 5000) // Adjust radius as needed
+
+		if err != nil {
+			nus.logger.Error("Error querying database", "error", err)
+			return status.Errorf(codes.Internal, "error querying database: %v", err)
+		}
+		defer rows.Close()
+
+		var nearbyUsers []*protosNearUsers.User
+		for rows.Next() {
+			var user protosNearUsers.User
+			if err := rows.Scan(&user.Id, &user.Latitude, &user.Longitude, &user.Name); err != nil {
+				nus.logger.Error("Error scanning row", "error", err)
+				return status.Errorf(codes.Internal, "error scanning row: %v", err)
+			}
+			nearbyUsers = append(nearbyUsers, &user)
+		}
+
+		if err := rows.Err(); err != nil {
+			nus.logger.Error("Error iterating rows", "error", err)
+			return status.Errorf(codes.Internal, "error iterating rows: %v", err)
 		}
 
 		resp := &protosNearUsers.NearbyUsersResponse{
@@ -111,8 +139,8 @@ func (nus *NearUsersServer) StreamNearbyUsers(stream protosNearUsers.NearUsers_S
 			return err
 		}
 	}
-}
 
+}
 
 // validateLocation ensures that the coordinates are within valid ranges.
 func validateLocation(loc *protosNearUsers.UserLocation) error {

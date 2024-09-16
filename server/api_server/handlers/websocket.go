@@ -43,7 +43,7 @@ func (wscul *WebSocketConnectioUserLocation) HandleWebsocketConnection(w http.Re
 	if err != nil {
 		wscul.logger.Error("Cannot upgrade to websocket connection", "error", err)
 		return
-		//TODO: handle error
+		//TODO: handle error better
 	}
 
 	// Create a gRPC stream to the server

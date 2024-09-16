@@ -1,3 +1,5 @@
+//gRPC server near_users
+
 package main
 
 import (
@@ -7,20 +9,35 @@ import (
 	"syscall"
 
 	"github.com/hashicorp/go-hclog"
+	"github.com/joho/godotenv"
+	"github.com/martbul/near_users/data"
 	protosNearUsers "github.com/martbul/near_users/protos/near_users"
 	"github.com/martbul/near_users/server"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 )
 
-const (
-	port = ":8000"
-)
+
 
 func main() {
 	logger := hclog.Default()
 
-	network, err := net.Listen("tcp", port)
+	// Find .env file
+	err := godotenv.Load(".env")
+	if err != nil {
+		logger.Error("Unable to load .env file", "error", err)
+	}
+
+	// Initialize the database connection
+	data.InitDB()
+	defer data.Close() // Ensure that the connection is closed on exit
+
+
+	// Getting and using a value from .env
+	nearUsersGrpcPort := os.Getenv("NEAR_USERS_GRPC_PORT")
+
+	// gRPC server is listening on port 8000 for requests
+	network, err := net.Listen("tcp", nearUsersGrpcPort)
 	if err != nil {
 		logger.Error("Unable to listen on port 8000", "error", err)
 	}
@@ -36,12 +53,10 @@ func main() {
 	reflection.Register(grpcServer)
 
 	go func() {
-		logger.Info("gRPC server started", "port", port)
+		logger.Info("gRPC server listening:", "port", nearUsersGrpcPort)
 		err := grpcServer.Serve(network)
 		if err != nil {
-
-			logger.Error("Unable to serve", "error", err)
-
+			logger.Error("Unable to serve gRPC server", "error", err)
 		}
 	}()
 
