@@ -13,12 +13,12 @@ import (
 	gohandlers "github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
+	protosAuth "github.com/martbul/auth/protos/auth"
 	protosNearUsers "github.com/martbul/near_users/protos/near_users"
 
 	"github.com/hashicorp/go-hclog"
 	"google.golang.org/grpc"
 )
-
 
 func main() {
 
@@ -31,32 +31,47 @@ func main() {
 	}
 
 	// Getting and using a value from .env
+	corsAddress := os.Getenv("CORS_ADDRESS")
+
 	dialNearUsersPort := os.Getenv("DIAL_NEAR_USERS_PORT")
+	dialAuthPort := os.Getenv("DIAL_AUTH_PORT")
 
 	//TODO: Remove WithInsecure in prod
-	conn, err := grpc.Dial(dialNearUsersPort, grpc.WithInsecure())
+	connNearUsers, err := grpc.Dial(dialNearUsersPort, grpc.WithInsecure())
 	if err != nil {
 		logger.Error("Unable to connect to gRPC server", "error", err)
 		panic(err)
 	}
 
-	defer conn.Close()
+	connAuth, err := grpc.Dial(dialAuthPort, grpc.WithInsecure())
+	if err != nil {
+		logger.Error("Unable to connect to gRPC server", "error", err)
+		panic(err)
+	}
+
+	defer connNearUsers.Close()
+	defer connAuth.Close()
 
 	//create gRPC client for near_users
-	grpcClient := protosNearUsers.NewNearUsersClient(conn)
-
-	//! usage of grpcClient
-	// response, err := grpcClient.GetNearbyUsers()
+	grpcNearUsersClient := protosNearUsers.NewNearUsersClient(connNearUsers)
+	grpcAuthClient := protosAuth.NewAuthClient(connAuth)
 
 	// Set up WebSocket connection handler
-	webSocketHandler := handlers.NewWebsocketConnectionUserLocation(logger, grpcClient)
+	webSocketHandler := handlers.NewWebsocketConnectionUserLocation(logger, grpcNearUsersClient)
+	authHandler := handlers.NewWebsocketConnectionUserLocation(logger, grpcAuthClient)
 
-	// Create and configure HTTP router
+	// Create
 	serverRouter := mux.NewRouter()
+
+	// Configure HTTP router
 	serverRouter.HandleFunc("/ws", webSocketHandler.HandleWebsocketConnection)
 
+	postRouter := serverRouter.Methods(http.MethodPost).Subrouter()
+	postRouter.HandleFunc("/auth/register", authHandler.Register)
+	postRouter.HandleFunc("/auth/login", authHandler.Login)
+
 	//CORS
-	corsConfig := gohandlers.CORS(gohandlers.AllowedOrigins([]string{"http://localhost:5000"}))
+	corsConfig := gohandlers.CORS(gohandlers.AllowedOrigins([]string{corsAddress}))
 
 	server := http.Server{
 		Addr:         ":9000",

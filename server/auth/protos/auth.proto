@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package auth;
+
+option go_package = "./protos/auth;auth";
+
+service Auth {
+   rpc RegisterUser(RegisterUserAuthData) returns (RegisterUserResponse);
+   rpc LoginUser(LogiUserAuthData) returns (LogiUserResponse);
+}
+
+
+message RegisterUserAuthData {
+   string userName = 1;
+   string email = 2;
+   string password = 3;
+}
+
+
+message RegisterUserResponse {
+
+}
+
+
+message LogiUserAuthData {
+   string email = 2;
+   string password = 3;
+}
+
+
+message LogiUserResponse {
+
+}

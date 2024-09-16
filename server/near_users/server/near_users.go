@@ -90,6 +90,7 @@ func (nus *NearUsersServer) StreamNearbyUsers(stream protosNearUsers.NearUsers_S
 			INSERT INTO user_locations (latitude, longitude)
 			VALUES ($1, $2)
 		`, loc.Latitude, loc.Longitude)
+
 		if err != nil {
 			nus.logger.Error("Error inserting location into database", "error", err)
 			return status.Errorf(codes.Internal, "error inserting location: %v", err)
@@ -97,14 +98,14 @@ func (nus *NearUsersServer) StreamNearbyUsers(stream protosNearUsers.NearUsers_S
 
 		// Perform a query to the database to get nearby users
 		rows, err := data.Query(stream.Context(), `
-    SELECT user_id, latitude, longitude
-    FROM user_locations
-    WHERE ST_DWithin(
-        ST_SetSRID(ST_MakePoint($1, $2), 4326),
-        location,
-        $3
-    )
-`, loc.Longitude, loc.Latitude, 5000) // Adjust radius as needed
+  		   SELECT user_id, latitude, longitude, location
+			FROM user_locations
+			WHERE ST_DWithin(
+    		ST_SetSRID(ST_MakePoint($1, $2), 4326),
+    		location,
+   		$3
+			)
+			`, loc.Longitude, loc.Latitude, 5000) // Adjust radius as needed
 
 		if err != nil {
 			nus.logger.Error("Error querying database", "error", err)
@@ -112,14 +113,34 @@ func (nus *NearUsersServer) StreamNearbyUsers(stream protosNearUsers.NearUsers_S
 		}
 		defer rows.Close()
 
+		// Define variables to hold the column values
+		var userID int
+		var latitude float64
+		var longitude float64
+		var location string // Use string for GEOGRAPHY(POINT) or adjust as needed
 		var nearbyUsers []*protosNearUsers.User
 		for rows.Next() {
-			var user protosNearUsers.User
-			if err := rows.Scan(&user.Id, &user.Latitude, &user.Longitude, &user.Name); err != nil {
+			err := rows.Scan(&userID, &latitude, &longitude, &location)
+			if err != nil {
 				nus.logger.Error("Error scanning row", "error", err)
 				return status.Errorf(codes.Internal, "error scanning row: %v", err)
 			}
-			nearbyUsers = append(nearbyUsers, &user)
+
+			// Create a user object and add to the slice
+			user := &protosNearUsers.User{
+				Id:        fmt.Sprintf("%d", userID),
+				Latitude:  latitude,
+				Longitude: longitude,
+				// Location field handling depends on how you need it
+			}
+
+			nearbyUsers = append(nearbyUsers, user)
+
+			// if err := rows.Scan(&user.Id, &user.Latitude, &user.Longitude, &user.Name); err != nil {
+			// 	nus.logger.Error("Error scanning row", "error", err)
+			// 	return status.Errorf(codes.Internal, "error scanning row: %v", err)
+			// }
+			// nearbyUsers = append(nearbyUsers, &user)
 		}
 
 		if err := rows.Err(); err != nil {

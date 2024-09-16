@@ -34,10 +34,10 @@ func main() {
 
 
 	// Getting and using a value from .env
-	nearUsersGrpcPort := os.Getenv("NEAR_USERS_GRPC_PORT")
+	nearUsersGrpcServerPort := os.Getenv("NEAR_USERS_GRPC_PORT")
 
 	// gRPC server is listening on port 8000 for requests
-	network, err := net.Listen("tcp", nearUsersGrpcPort)
+	network, err := net.Listen("tcp", nearUsersGrpcServerPort)
 	if err != nil {
 		logger.Error("Unable to listen on port 8000", "error", err)
 	}
@@ -53,7 +53,7 @@ func main() {
 	reflection.Register(grpcServer)
 
 	go func() {
-		logger.Info("gRPC server listening:", "port", nearUsersGrpcPort)
+		logger.Info("gRPC server listening:", "port", nearUsersGrpcServerPort)
 		err := grpcServer.Serve(network)
 		if err != nil {
 			logger.Error("Unable to serve gRPC server", "error", err)
