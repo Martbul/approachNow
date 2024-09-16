@@ -5,29 +5,33 @@ package auth;
 option go_package = "./protos/auth;auth";
 
 service Auth {
-   rpc RegisterUser(RegisterUserAuthData) returns (RegisterUserResponse);
-   rpc LoginUser(LogiUserAuthData) returns (LogiUserResponse);
+   rpc RegisterUser(RegisterUserRequest) returns (RegisterUserResponse);
+   rpc LoginUser(LoginUserRequest) returns (LoginUserResponse);
 }
 
 
-message RegisterUserAuthData {
-   string userName = 1;
-   string email = 2;
-   string password = 3;
+message RegisterUserRequest {
+   string username = 1;
+   string password = 2;
+   string email = 3;
 }
 
 
 message RegisterUserResponse {
-
+   bool success = 1;
+   string message = 2;
+   string token = 3;  
 }
 
 
-message LogiUserAuthData {
-   string email = 2;
-   string password = 3;
+message LoginUserRequest  {
+   string email = 1;
+   string password = 2;
 }
 
 
-message LogiUserResponse {
-
+message LoginUserResponse {
+   bool success = 1;
+   string message = 2;
+   string token = 3;  
 }

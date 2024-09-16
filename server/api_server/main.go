@@ -58,7 +58,7 @@ func main() {
 
 	// Set up WebSocket connection handler
 	webSocketHandler := handlers.NewWebsocketConnectionUserLocation(logger, grpcNearUsersClient)
-	authHandler := handlers.NewWebsocketConnectionUserLocation(logger, grpcAuthClient)
+	authHandler := handlers.NewAuthHandler(logger, grpcAuthClient)
 
 	// Create
 	serverRouter := mux.NewRouter()

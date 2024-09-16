@@ -29,7 +29,7 @@ func main() {
 
 	network, err := net.Listen("tcp", authGrpcServerPort)
 	if err != nil {
-		logger.Error("Unable to listen on port 8000", "error", err)
+		logger.Error("Unable to listen on","address",authGrpcServerPort, "error", err)
 	}
 
 	grpcServer := grpc.NewServer()
@@ -41,7 +41,7 @@ func main() {
 	reflection.Register(grpcServer)
 
 	go func() {
-		logger.Info("gRPC server listening:", "port", authGrpcServerPort)
+		logger.Info("gRPC server listening:", "address", authGrpcServerPort)
 		err := grpcServer.Serve(network)
 		if err != nil {
 			logger.Error("Unable to serve gRPC server", "error", err)
