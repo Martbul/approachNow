@@ -32,9 +32,10 @@ const RootLayout = () => {
   if (!fontsLoaded && !error) return null;
 
   return (
-    <ThemeProvider value={ DarkTheme }>
+    <ThemeProvider value={DarkTheme}>
       <AuthContextProvider>
         <Stack>
+          <Stack.Screen name="index" options={{ headerShown: false }} />
           <Stack.Screen name="(auth)" options={{ headerShown: false }} />
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="+not-found" />

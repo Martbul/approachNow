@@ -1,32 +1,30 @@
-import { View, Text, ScrollView, Image, Alert } from "react-native";
-import React, { useContext, useState } from "react";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { images } from "../../constants";
-import FormField from "../../components/FormField";
+import { View, Text, ScrollView, Image, Alert } from 'react-native'
+import React, { useContext, useState } from 'react'
+import {  SafeAreaView } from 'react-native-safe-area-context'
+import {images} from '../../constants'
+import FormField from '../../components/FormField'
 import CustomButton from "../../components/CustomButton";
-import { Link, router } from "expo-router";
-import { AuthContext } from "../../contexts/AuthContext";
-import { registerUser } from "../../services/userAuth";
+import { Link, router } from 'expo-router'
+import { AuthContext } from '../../contexts/AuthContext'
+import { loginUser } from '../../services/userAuth'
 
-const SignUp = () => {
-  const [form, setForm] = useState({ username: "", email: "", password: "" });
+
+const SignIn = () => {
+  const [form, setForm] = useState({ email: "", password: "" });
   const [isSubmiting, setIsSubmiting] = useState(false);
-  const { user, isLoading, setUser } = useContext(AuthContext);
+  const{user,isLoading,setUser} = useContext(AuthContext);
   const submit = async () => {
-    if (!form.username || !form.email || !form.password) {
+    if (!form.email || !form.password) {
+      
       Alert.alert("Error", "Please fill in all fields");
-      return;
+      return
     }
+
     setIsSubmiting(true);
 
     try {
-      const result = await registerUser(
-        form.username,
-        form.email,
-        form.password
-      );
+      const result = await loginUser(form.email, form.password);
 
-      console.log("result", result);
       setUser(result);
       router.replace("/index");
     } catch (error) {
@@ -35,6 +33,7 @@ const SignUp = () => {
       setIsSubmiting(false);
     }
   };
+
   return (
     <SafeAreaView className="bg-primary h-full">
       <ScrollView>
@@ -46,15 +45,9 @@ const SignUp = () => {
           />
 
           <Text className="text-2xl text-white semi-bold mt-10 font-psemibold">
-            Sign up to Snit
+            Log into Snit
           </Text>
 
-          <FormField
-            title="username"
-            value={form.username}
-            handleChangeText={(e) => setForm({ ...form, username: e })}
-            otherStyles="mt-10"
-          ></FormField>
           <FormField
             title="email"
             value={form.email}
@@ -78,13 +71,10 @@ const SignUp = () => {
           />
           <View className="justify-center pt-5 flex-row gap-2">
             <Text className="text-lg text-gray-100 font-pregular">
-              Have an account already?
+              Don't have account?
             </Text>
-            <Link
-              href="/sign-in"
-              className="text-lg font-psemibold text-secondary"
-            >
-              Sign In
+            <Link href="/(auth)/login" className="text-lg font-psemibold text-secondary">
+              Sign Up
             </Link>
           </View>
         </View>
@@ -93,4 +83,4 @@ const SignUp = () => {
   );
 };
 
-export default SignUp;
+export default SignIn;

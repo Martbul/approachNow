@@ -36,3 +36,89 @@ const FormField = ({title, value, placeholder, otherStyles,handleChangeText,...p
 }
 
 export default FormField
+
+// import React, { useState } from "react";
+// import {
+//   View,
+//   Text,
+//   TextInput,
+//   TouchableOpacity,
+//   Image,
+//   TextInputProps,
+//   ViewStyle,
+// } from "react-native";
+// import { icons } from "@/constants";
+
+// // Define the types for the props
+// interface FormFieldProps extends TextInputProps {
+//   title: string;
+//   value: string;
+//   placeholder?: string;
+//   otherStyles?: ViewStyle | string; // You may need to adjust this depending on how you're handling styles
+//   handleChangeText: (text: string) => void;
+// }
+
+// const FormField: React.FC<FormFieldProps> = ({
+//   title,
+//   value,
+//   placeholder,
+//   otherStyles,
+//   handleChangeText,
+//   ...props
+// }) => {
+//   const [showPassword, setShowPassword] = useState(false);
+
+//   return (
+//     <View
+//       style={[
+//         { marginVertical: 8 },
+//         typeof otherStyles === "string" ? {} : otherStyles,
+//       ]}
+//     >
+//       <Text style={{ fontSize: 16, color: "#e0e0e0", fontFamily: "pmedium" }}>
+//         {title}
+//       </Text>
+
+//       <View
+//         style={{
+//           width: "100%",
+//           height: 64,
+//           paddingHorizontal: 16,
+//           backgroundColor: "#3a3a3a",
+//           borderRadius: 16,
+//           borderColor: "#3a3a3a",
+//           borderWidth: 2,
+//           flexDirection: "row",
+//           alignItems: "center",
+//         }}
+//       >
+//         <TextInput
+//           style={{
+//             flex: 1,
+//             color: "#fff",
+//             fontFamily: "psemibold",
+//             fontSize: 16,
+//           }}
+//           value={value}
+//           placeholder={placeholder}
+//           placeholderTextColor="#7B7B8B"
+//           onChangeText={handleChangeText}
+//           secureTextEntry={title === "password" && !showPassword}
+//           {...props}
+//         />
+
+//         {title === "password" && (
+//           <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+//             <Image
+//               source={!showPassword ? icons.eye : icons.eyeHide}
+//               style={{ width: 24, height: 24 }}
+//               resizeMode="contain"
+//             />
+//           </TouchableOpacity>
+//         )}
+//       </View>
+//     </View>
+//   );
+// };
+
+// export default FormField;

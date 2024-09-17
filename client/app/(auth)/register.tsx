@@ -1,39 +1,40 @@
-import { View, Text, ScrollView, Image, Alert } from 'react-native'
-import React, { useContext, useState } from 'react'
-import {  SafeAreaView } from 'react-native-safe-area-context'
-import {images} from '../../constants'
-import FormField from '../../components/FormField'
+import { View, Text, ScrollView, Image, Alert } from "react-native";
+import React, { useContext, useState } from "react";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { images } from "../../constants";
+import FormField from "../../components/FormField";
 import CustomButton from "../../components/CustomButton";
-import { Link, router } from 'expo-router'
-import { AuthContext } from '../../contexts/AuthContext'
-import { loginUser } from '../../services/userAuth'
+import { Link, router } from "expo-router";
+import { AuthContext } from "../../contexts/AuthContext";
+import { registerUser } from "../../services/userAuth";
 
-
-const SignIn = () => {
-  const [form, setForm] = useState({ email: "", password: "" });
+const SignUp = () => {
+  const [form, setForm] = useState({ username: "", email: "", password: "" });
   const [isSubmiting, setIsSubmiting] = useState(false);
-  const{user,isLoading,setUser} = useContext(AuthContext);
+  const { user, isLoading, setUser } = useContext(AuthContext);
   const submit = async () => {
-    if (!form.email || !form.password) {
-      
+    if (!form.username || !form.email || !form.password) {
       Alert.alert("Error", "Please fill in all fields");
-      return
+      return;
     }
-
     setIsSubmiting(true);
 
     try {
-      const result = await loginUser(form.email, form.password);
+      const result = await registerUser(
+        form.username,
+        form.email,
+        form.password
+      );
 
+      console.log("result", result);
       setUser(result);
-      router.replace("/index");
+      router.replace("/(tabs)/");
     } catch (error) {
       Alert.alert("Error", error.message);
     } finally {
       setIsSubmiting(false);
     }
   };
-
   return (
     <SafeAreaView className="bg-primary h-full">
       <ScrollView>
@@ -45,21 +46,30 @@ const SignIn = () => {
           />
 
           <Text className="text-2xl text-white semi-bold mt-10 font-psemibold">
-            Log into Snit
+            Sign up to Snit
           </Text>
 
           <FormField
+            placeholder={"johnDoe"}
+            title="username"
+            value={form.username}
+            handleChangeText={(e: string) => setForm({ ...form, username: e })}
+            otherStyles="mt-10"
+          ></FormField>
+          <FormField
+            placeholder={"johnDoe@gmail.com"}
             title="email"
             value={form.email}
-            handleChangeText={(e) => setForm({ ...form, email: e })}
+            handleChangeText={(e: string) => setForm({ ...form, email: e })}
             otherStyles="mt-7"
             keyboardType="email-address"
           ></FormField>
 
           <FormField
+            placeholder={"mysecretpass"}
             title="password"
             value={form.password}
-            handleChangeText={(e) => setForm({ ...form, password: e })}
+            handleChangeText={(e: string) => setForm({ ...form, password: e })}
             otherStyles="mt-7"
           ></FormField>
 
@@ -71,10 +81,13 @@ const SignIn = () => {
           />
           <View className="justify-center pt-5 flex-row gap-2">
             <Text className="text-lg text-gray-100 font-pregular">
-              Don't have account?
+              Have an account already?
             </Text>
-            <Link href="/sign-up" className="text-lg font-psemibold text-secondary">
-              Sign Up
+            <Link
+              href="/(auth)/login"
+              className="text-lg font-psemibold text-secondary"
+            >
+              Sign In
             </Link>
           </View>
         </View>
@@ -83,4 +96,4 @@ const SignIn = () => {
   );
 };
 
-export default SignIn;
+export default SignUp;
