@@ -4,13 +4,14 @@ package server
 
 import (
 	"context"
-	"log"
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/martbul/auth/data"
 	protosAuth "github.com/martbul/auth/protos/auth"
 	"github.com/martbul/auth/utils"
 	"golang.org/x/crypto/bcrypt"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 // AuthServer implements the Auth gRPC service
@@ -26,35 +27,25 @@ func NewAuthServer(logger hclog.Logger) *AuthServer {
 	}
 }
 
-//TODO: Add data validation (check is the email is an indeed email, min length on email and password, ...)
+// TODO: Add data validation (check is the email is an indeed email, min length on email and password, ...)
 // RegisterUser handles user registration and returns a JWT token for automatic login
 func (as *AuthServer) RegisterUser(ctx context.Context, req *protosAuth.RegisterUserRequest) (*protosAuth.RegisterUserResponse, error) {
-	log.Println("here2")
 
-
-
-
-
-
-
-	//! some error in between here2 and here3
 
 	// check if email already exists
 	existingUser, err := data.GetUserByEmail(ctx, req.Email)
+	//! BEST ERROR HANDLING (FOR NOW)
 	if err != nil {
 		as.logger.Error("Unable to check user's email", "error", err)
-		return &protosAuth.RegisterUserResponse{
-			Success: false,
-			Message: "Email already registered",
-		}, nil
+		return nil, status.Error(codes.Internal, "Internal server error")
 	}
 
 	if existingUser != nil {
-		return &protosAuth.RegisterUserResponse{
-			Success: false,
-			Message: "Email already registered",
-		}, nil
+		as.logger.Error("Email already registered", "error", err)
+
+		return nil, status.Error(codes.AlreadyExists, "Email already registered")
 	}
+
 
 	//hashing the password
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
@@ -67,14 +58,6 @@ func (as *AuthServer) RegisterUser(ctx context.Context, req *protosAuth.Register
 	}
 
 
-
-
-
-
-
-
-	log.Println("here3")
-
 	//store the user in DB
 	err = data.CreateUser(ctx, req.Username, req.Email, string(hashedPassword))
 	if err != nil {
@@ -84,6 +67,7 @@ func (as *AuthServer) RegisterUser(ctx context.Context, req *protosAuth.Register
 			Message: "Internal server error",
 		}, err
 	}
+
 
 	//Generate JWT token
 	tokenString, err := utils.GenerateJWT(req.Email)
@@ -97,6 +81,7 @@ func (as *AuthServer) RegisterUser(ctx context.Context, req *protosAuth.Register
 
 	as.logger.Info("Register user and returned JWT token")
 
+
 	return &protosAuth.RegisterUserResponse{
 		Success: true,
 		Message: "User registered successfully",
@@ -106,31 +91,28 @@ func (as *AuthServer) RegisterUser(ctx context.Context, req *protosAuth.Register
 }
 
 
-//TODO: Add data validation (check is the email is an indeed email, min length on email and password, ...)
+
+
+// TODO: Add data validation (check is the email is an indeed email, min length on email and password, ...)
 func (as *AuthServer) LoginUser(ctx context.Context, req *protosAuth.LoginUserRequest) (*protosAuth.LoginUserResponse, error) {
 	// Get user by email
 	user, err := data.GetUserByEmail(ctx, req.Email)
 	if err != nil {
 		as.logger.Error("Failed to get user by email", "error", err)
-		return &protosAuth.LoginUserResponse{
-			Success: false,
-			Message: "Internal server error",
-		}, err
+		return nil, status.Error(codes.Internal, "Internal server error")
+
 	}
+
 	if user == nil {
-		return &protosAuth.LoginUserResponse{
-			Success: false,
-			Message: "Invalid email or password",
-		}, nil
+		as.logger.Error("Failed to get user by email", "error", err)
+		return nil, status.Error(codes.Unauthenticated, "Invalid email or password")
+
 	}
 
 	//compare passwords
 	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password))
 	if err != nil {
-		return &protosAuth.LoginUserResponse{
-			Success: false,
-			Message: "Invalid email or password",
-		}, nil
+		return nil, status.Error(codes.Unauthenticated, "Invalid email or password")
 	}
 
 	// Generate JWT token

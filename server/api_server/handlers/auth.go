@@ -5,10 +5,11 @@ package handlers
 import (
 	"context"
 	"encoding/json"
-	"log"
 	"net/http"
 
 	protosAuth "github.com/martbul/auth/protos/auth"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"github.com/hashicorp/go-hclog"
 )
@@ -32,32 +33,47 @@ func (ah *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid request", http.StatusBadRequest)
 		return
 	}
-log.Println("here1")
+
 	//Call the gRPC RegisterUser services
 	resp, err := ah.authClient.RegisterUser(context.Background(), &req)
 	if err != nil {
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
-		return
+		if grpcStatus, ok := status.FromError(err); ok {
+			switch grpcStatus.Code() {
+			case codes.AlreadyExists:
+				http.Error(w, grpcStatus.Message(), http.StatusConflict) // HTTP 409 Conflict
+				return
+			case codes.Internal:
+				http.Error(w, "Internal server error", http.StatusInternalServerError)
+				return
+			}
+		}
 	}
 
 	//return the result to the client
 	json.NewEncoder(w).Encode(resp)
 }
 
-
 func (ah *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	var req protosAuth.LoginUserRequest
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
-			http.Error(w, "Invalid request", http.StatusBadRequest)
+		http.Error(w, "Invalid request", http.StatusBadRequest)
 		return
 	}
 
 	//Call the gRPC LoginUser service
 	resp, err := ah.authClient.LoginUser(context.Background(), &req)
 	if err != nil {
-	http.Error(w, "Internal server error", http.StatusInternalServerError)
-		return
+		if grpcStatus, ok := status.FromError(err); ok {
+			switch grpcStatus.Code() {
+			case codes.Unauthenticated: 
+				http.Error(w, grpcStatus.Message(), http.StatusForbidden) 
+				return
+			case codes.Internal:
+				http.Error(w, "Internal server error", http.StatusInternalServerError)
+				return
+			}
+		}
 	}
 
 	// Return the result to the client

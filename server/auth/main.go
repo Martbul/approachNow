@@ -10,6 +10,7 @@ import (
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/joho/godotenv"
+	"github.com/martbul/auth/data"
 	protosAuth "github.com/martbul/auth/protos/auth"
 	"github.com/martbul/auth/server"
 
@@ -23,9 +24,15 @@ func main() {
 	err := godotenv.Load(".env")
 	if err != nil {
 		logger.Error("Unable to load .env file", "error", err)
-	}
+	}	
+	
+	// Initialize the database connection
+	data.InitDB()
+	defer data.Close() // Ensure that the connection is closed on exit
 
+	
 	authGrpcServerPort := os.Getenv("DIAL_AUTH_PORT")
+	
 
 	network, err := net.Listen("tcp", authGrpcServerPort)
 	if err != nil {
