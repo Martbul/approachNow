@@ -1,3 +1,4 @@
+//! FLAGGED FOR DELETION
 package utils
 
 import (
@@ -7,6 +8,7 @@ import (
 	"github.com/dgrijalva/jwt-go"
 )
 
+//TODO: Put secret key in .env
 var jwtKey = []byte("your_jwt_secret_key")
 
 type Claims struct {
@@ -49,3 +51,5 @@ func ValidateJWT(tokenString string) (*Claims, error) {
 
 	return claims, nil
 }
+
+

@@ -6,12 +6,12 @@ import FormField from "../../components/FormField";
 import CustomButton from "../../components/CustomButton";
 import { Link, router } from "expo-router";
 import { AuthContext } from "../../contexts/AuthContext";
-import { registerUser } from "../../services/userAuth";
 
 const SignUp = () => {
+  const { registerUser, isLoading, user, setUser } = useContext(AuthContext);
+
   const [form, setForm] = useState({ username: "", email: "", password: "" });
   const [isSubmiting, setIsSubmiting] = useState(false);
-  const { user, isLoading, setUser } = useContext(AuthContext);
   const submit = async () => {
     if (!form.username || !form.email || !form.password) {
       Alert.alert("Error", "Please fill in all fields");
@@ -28,7 +28,7 @@ const SignUp = () => {
 
       console.log("result", result);
       setUser(result);
-      router.replace("/(tabs)/");
+      router.replace("/(tabs)/home");
     } catch (error) {
       Alert.alert("Error", error.message);
     } finally {

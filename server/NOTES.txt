@@ -1,2 +1,2 @@
-Now you must implement the client page for auth, then when a user is auth you must add him with his user id as a referance to the table and then insert his location.
-After that every 10 second you must update his location in the DB and check if users (that are not his id) are around him
+Must pass the jwt with the location stream to the near users microservice. 
+Then get the user_id and based on it update his location in the DB and get users near him witch are not him

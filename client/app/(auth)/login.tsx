@@ -6,18 +6,18 @@ import FormField from '../../components/FormField'
 import CustomButton from "../../components/CustomButton";
 import { Link, router } from 'expo-router'
 import { AuthContext } from '../../contexts/AuthContext'
-import { loginUser } from '../../services/userAuth'
+
 
 
 const SignIn = () => {
+  const { loginUser, isLoading, user, setUser } = useContext(AuthContext); // Get the registerUser function from AuthContext
+
   const [form, setForm] = useState({ email: "", password: "" });
   const [isSubmiting, setIsSubmiting] = useState(false);
-  const{user,isLoading,setUser} = useContext(AuthContext);
   const submit = async () => {
     if (!form.email || !form.password) {
-      
       Alert.alert("Error", "Please fill in all fields");
-      return
+      return;
     }
 
     setIsSubmiting(true);
@@ -26,7 +26,7 @@ const SignIn = () => {
       const result = await loginUser(form.email, form.password);
 
       setUser(result);
-      router.replace("/index");
+      router.replace("/(tabs)/home");
     } catch (error) {
       Alert.alert("Error", error.message);
     } finally {
@@ -73,7 +73,10 @@ const SignIn = () => {
             <Text className="text-lg text-gray-100 font-pregular">
               Don't have account?
             </Text>
-            <Link href="/(auth)/login" className="text-lg font-psemibold text-secondary">
+            <Link
+              href="/(auth)/login"
+              className="text-lg font-psemibold text-secondary"
+            >
               Sign Up
             </Link>
           </View>

@@ -57,19 +57,28 @@ func main() {
 	grpcAuthClient := protosAuth.NewAuthClient(connAuth)
 
 	// Set up WebSocket connection handler
-	webSocketHandler := handlers.NewWebsocketConnectionUserLocation(logger, grpcNearUsersClient)
+	webSocketHandler := handlers.NewWebSocketConnectionUserLocation(logger, grpcNearUsersClient)
 	authHandler := handlers.NewAuthHandler(logger, grpcAuthClient)
 
 	// Create
 	serverRouter := mux.NewRouter()
 
-	// Configure HTTP router
-	serverRouter.HandleFunc("/ws", webSocketHandler.HandleWebsocketConnection)
 
+	// // Configure HTTP router
+	// // Apply JWT middleware to the /ws route
+	// serverRouter.Handle("/ws", middleware.JWTAuthMiddleware(logger, http.HandlerFunc(webSocketHandler.HandleWebSocketConnection)))
+
+	// postRouter := serverRouter.Methods(http.MethodPost).Subrouter()
+	// postRouter.HandleFunc("/auth/register", authHandler.Register)
+	// postRouter.HandleFunc("/auth/login", authHandler.Login)
+
+
+
+	// Configure HTTP routes with JWT middleware
+	serverRouter.Handle("/ws", http.HandlerFunc(webSocketHandler.HandleWebSocketConnection))
 	postRouter := serverRouter.Methods(http.MethodPost).Subrouter()
 	postRouter.HandleFunc("/auth/register", authHandler.Register)
 	postRouter.HandleFunc("/auth/login", authHandler.Login)
-
 	//CORS
 	corsConfig := gohandlers.CORS(gohandlers.AllowedOrigins([]string{corsAddress}))
 
