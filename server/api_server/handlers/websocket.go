@@ -54,8 +54,6 @@
 // 	}
 // 	defer stream.CloseSend()
 
-
-
 // 	// Listen for incoming WebSocket messages (locations)
 // 	go func() {
 // 		for {
@@ -112,14 +110,7 @@
 // 		}
 // 	}
 
-	
-
 // }
-
-
-
-
-
 
 // package handlers
 
@@ -246,8 +237,6 @@
 // 	}
 // }
 
-
-
 package handlers
 
 import (
@@ -257,8 +246,8 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/hashicorp/go-hclog"
-	protosNearUsers "github.com/martbul/near_users/protos/near_users"
 	"github.com/martbul/auth/utils"
+	protosNearUsers "github.com/martbul/near_users/protos/near_users"
 )
 
 var (
@@ -272,14 +261,20 @@ var (
 	sessionMap = make(map[string]*websocket.Conn) // Map of JWT to WebSocket connections
 )
 
+type UserTokenAndLocation struct {
+	JwtToken  string  `json:"jwtToken"`
+	Latitude  float64 `json:"latitude"`
+	Longitude float64 `json:"longitude"`
+}
+
 type UserLocation struct {
 	Latitude  float64 `json:"latitude"`
 	Longitude float64 `json:"longitude"`
 }
 
 type WebSocketConnectionUserLocation struct {
-	logger      hclog.Logger
-	grpcClient  protosNearUsers.NearUsersClient
+	logger     hclog.Logger
+	grpcClient protosNearUsers.NearUsersClient
 }
 
 func NewWebSocketConnectionUserLocation(logger hclog.Logger, grpcClient protosNearUsers.NearUsersClient) *WebSocketConnectionUserLocation {
@@ -336,17 +331,36 @@ func (wscul *WebSocketConnectionUserLocation) HandleWebSocketConnection(w http.R
 					return
 				}
 
-				grpcLoc := &protosNearUsers.UserLocation{
+				// //! add token to loc
+				// grpcLoc := &protosNearUsers.UserLocation{
+				// 	Latitude:  location.Latitude,
+				// 	Longitude: location.Longitude,
+				// }
+
+				// wscul.logger.Info("Received location", "latitude", grpcLoc.Latitude, "longitude", grpcLoc.Longitude)
+
+				userTokenAndLocation := &protosNearUsers.UserTokenAndLocation{
+					JwtToken: token,
 					Latitude:  location.Latitude,
 					Longitude: location.Longitude,
 				}
-				wscul.logger.Info("Received location", "latitude", grpcLoc.Latitude, "longitude", grpcLoc.Longitude)
+
+				wscul.logger.Info("tokenAndLocation", userTokenAndLocation)
 
 				// Send location to gRPC stream
-				if err := stream.Send(grpcLoc); err != nil {
+				// if err := stream.Send(grpcLoc); err != nil {
+				// 	wscul.logger.Error("Error sending to gRPC stream", "error", err)
+				// 	return
+				// }
+
+				
+				if err := stream.Send(userTokenAndLocation); err != nil {
 					wscul.logger.Error("Error sending to gRPC stream", "error", err)
 					return
 				}
+
+				
+
 			}
 		}
 	}()

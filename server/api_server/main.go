@@ -76,6 +76,7 @@ func main() {
 
 	// Configure HTTP routes with JWT middleware
 	serverRouter.Handle("/ws", http.HandlerFunc(webSocketHandler.HandleWebSocketConnection))
+	
 	postRouter := serverRouter.Methods(http.MethodPost).Subrouter()
 	postRouter.HandleFunc("/auth/register", authHandler.Register)
 	postRouter.HandleFunc("/auth/login", authHandler.Login)

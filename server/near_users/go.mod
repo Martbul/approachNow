@@ -2,6 +2,8 @@ module github.com/martbul/near_users
 
 go 1.22.6
 
+
+
 require (
 	github.com/fatih/color v1.13.0 // indirect
 	github.com/gorilla/websocket v1.5.3 // indirect
@@ -25,4 +27,8 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240604185151-ef581f913117 // indirect
 	google.golang.org/grpc v1.66.2 // indirect
 	google.golang.org/protobuf v1.34.1 // indirect
+	github.com/martbul/auth v0.0.0
 )
+replace github.com/martbul/auth => ../auth
+
+

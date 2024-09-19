@@ -6,13 +6,13 @@ option go_package = "./protos/near_users;near_users";
 
 
 service NearUsers {
-   rpc GetNearbyUsers(UserLocation) returns (NearbyUsersResponse);
-   rpc StreamNearbyUsers(stream UserLocation) returns (stream NearbyUsersResponse);
+   rpc StreamNearbyUsers(stream UserTokenAndLocation) returns (stream NearbyUsersResponse);
 }
 
-message UserLocation {
-   double latitude = 1;
-   double longitude = 2;
+message UserTokenAndLocation {
+     string JwtToken = 1;
+   double latitude = 2;
+   double longitude = 3;
 }
 
 message NearbyUsersResponse {
