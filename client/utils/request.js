@@ -1,4 +1,4 @@
-export const baseUrl = "http://192.168.100.9:9000";
+export const baseUrl = "http://192.168.0.106:9000";
 
 export const postRequest = async (url, body) => {
    
@@ -19,8 +19,10 @@ export const postRequest = async (url, body) => {
         } else {
             message = data;
         }
+        console.log(response)
         throw new Error(message);
     }
+    console.log(response)
 
     return response.json();
 };

@@ -260,6 +260,7 @@ func NewAuthHandler(logger hclog.Logger, authClient protosAuth.AuthClient) *Auth
 
 // Register handles user registration
 func (ah *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
+	ah.logger.Info("Registering User")
 	var req protosAuth.RegisterUserRequest
 
 	// Decode request

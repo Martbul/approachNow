@@ -19,7 +19,8 @@ export const AuthContextProvider = ({ children }) => {
       );
 
       if (response.error) {
-        console.error("Registration error", response.error);
+        // console.error("Registration error", response.error);
+        console.error("Registration error", response);
         throw new Error(response.error);
       }
 

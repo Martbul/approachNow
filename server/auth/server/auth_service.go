@@ -181,6 +181,8 @@ func validatePassword(password string) bool {
 
 // RegisterUser handles user registration and returns a JWT token for automatic login
 func (as *AuthServer) RegisterUser(ctx context.Context, req *protosAuth.RegisterUserRequest) (*protosAuth.RegisterUserResponse, error) {
+	as.logger.Info("User Reg gRPC Server")
+
 	// Input validation
 	if !validateEmail(req.Email) {
 		return nil, status.Error(codes.InvalidArgument, "Invalid email format")
