@@ -76,28 +76,43 @@ var pool *pgxpool.Pool
 
 // InitDB initializes the connection pool.
 func InitDB() {
-	err := godotenv.Load(".env")
-	if err != nil {
-		logger.Error("Unable to load .env file", "error", err)
-		return
-	}
+    err := godotenv.Load(".env")
+    if err != nil {
+        logger.Error("Unable to load .env file", "error", err)
+        return
+    }
 
-	dbConnStr := os.Getenv("DB_NEON_CONN_STR")
+    dbConnStr := os.Getenv("DB_NEON_CONN_STR")
 
-	var errConn error
-	pool, errConn = pgxpool.Connect(context.Background(), dbConnStr)
-	if errConn != nil {
-		logger.Error("Unable to connect to DB", "error", errConn)
-		return
-	}
+    if dbConnStr == "" {
+        logger.Error("DB_NEON_CONN_STR is not set in .env")
+        return
+    }
 
-	logger.Info("Connected to PostgreSQL with provider NeonDB")
+    var errConn error
+    pool, errConn = pgxpool.Connect(context.Background(), dbConnStr)
+    if errConn != nil {
+        logger.Error("Unable to connect to DB", "error", errConn)
+        return
+    }
+
+    if pool == nil {
+        logger.Error("Database pool is nil after initialization")
+        return
+    }
+
+    logger.Info("Connected to PostgreSQL with provider NeonDB")
 }
+
 
 // Query executes an SQL query using the connection pool.
 func Query(ctx context.Context, sql string, args ...interface{}) (pgx.Rows, error) {
 	if pool == nil {
-		return nil, fmt.Errorf("database pool is not initialized")
+		//Todo: when sending user loc and the getting the id from the jwt token pool is not initialized,
+		//Todo: here i am colling InitDB, but htis is a temporere solution
+		InitDB()
+		// return nil, fmt.Errorf("database pool is NOT initialized")
+		return pool.Query(ctx, sql, args...)
 	}
 	return pool.Query(ctx, sql, args...)
 }

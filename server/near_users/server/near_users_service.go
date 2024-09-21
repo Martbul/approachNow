@@ -34,7 +34,6 @@ func (nus *NearUsersServer) StreamNearbyUsers(stream protosNearUsers.NearUsers_S
 	for {
 		// Receive a UserTokenAndLocation message from the stream
 		tokAndloc, err := stream.Recv()
-		nus.logger.Info("tokanAndLocation", tokAndloc)
 		if err != nil {
 			if err == context.Canceled {
 				nus.logger.Info("Stream cancelled by client")
@@ -50,7 +49,8 @@ func (nus *NearUsersServer) StreamNearbyUsers(stream protosNearUsers.NearUsers_S
 			nus.logger.Error("Invalid location", "error", err)
 			return status.Errorf(codes.InvalidArgument, "invalid location: %v", err)
 		}
-
+		//! here you are just calling a func from other microservice
+		//! maybe here must be used another gRPC connection
 		userId,err := utils.GetUserIdFromJWT(tokAndloc.JwtToken)
 		
 		
