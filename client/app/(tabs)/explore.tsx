@@ -913,7 +913,7 @@ const App: React.FC = () => {
       }
 
       const websocket = new WebSocket(
-        `ws://192.168.0.106:9000/ws?token=${token}` // Pass token as query param
+        `ws://192.168.100.9:9000/ws?token=${token}` // Pass token as query param
       );
 
       websocket.onopen = () => {
